@@ -27,15 +27,11 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:27.1.1'
-
-    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.3.0-alpha4'
-
-
-    // https://mvnrepository.com/artifact/org.eclipse.californium/californium-core
     implementation group: 'org.eclipse.californium', name: 'californium-core', version: '2.0.0-M9'
-    // https://mvnrepository.com/artifact/org.eclipse.californium/scandium
     implementation group: 'org.eclipse.californium', name: 'scandium', version: '2.0.0-M9'
+    // https://mvnrepository.com/artifact/org.eclipse.californium/demo-certs
+    implementation group: 'org.eclipse.californium', name: 'demo-certs', version: '2.0.0-M9'
     implementation 'com.android.support.constraint:constraint-layout:1.1.0'
     testImplementation 'junit:junit:4.12'
     implementation 'org.slf4j:slf4j-api:1.7.24'

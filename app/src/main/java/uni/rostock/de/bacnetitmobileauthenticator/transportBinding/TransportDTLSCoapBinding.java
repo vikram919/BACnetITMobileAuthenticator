@@ -1,18 +1,14 @@
 package uni.rostock.de.bacnetitmobileauthenticator.transportBinding;
 
-import android.content.Context;
-
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 import org.eclipse.californium.core.network.CoapEndpoint;
-import org.eclipse.californium.core.network.Endpoint;
-import org.eclipse.californium.core.network.interceptors.MessageTracer;
+import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
-import org.eclipse.californium.scandium.dtls.pskstore.StaticPskStore;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,12 +27,9 @@ import ch.fhnw.bacnetit.ase.transportbinding.service.api.ASEService;
 
 public class TransportDTLSCoapBinding implements ASEService {
 
-    private static final boolean PSK_MODE = true;
-    private static final boolean CERTIFICATE_MODE = false;
     private static String resource = "/transport";
-    public static final String PSK_IDENTITY = "password";
-    public static final byte[] PSK_SECRET = "sesame".getBytes();
-    private Context context;
+    public static final String CLIENT_NAME = "client";
+    public static final String SERVER_NAME = "server";
 
     private TransportBindingService transportBindingService;
 
@@ -48,15 +41,7 @@ public class TransportDTLSCoapBinding implements ASEService {
     }
 
     public void destroyCoapServer() {
-        this.server.stop();
-    }
-
-    public void destroyCoapClient() {
-        this.client.shutdown();
-    }
-
-    public TransportDTLSCoapBinding(Context context) {
-        this.context = context;
+        this.server.destroy();
     }
 
     @Override
@@ -89,7 +74,6 @@ public class TransportDTLSCoapBinding implements ASEService {
                     transportBindingService.onIndication(tpdu,
                             new InetSocketAddress(exchange.getSourceAddress(), exchange.getSourcePort()));
                     exchange.respond(ResponseCode.CHANGED);
-
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 } finally {
@@ -103,23 +87,14 @@ public class TransportDTLSCoapBinding implements ASEService {
             }
 
         });
-        DtlsConnectorConfig.Builder config = new DtlsConnectorConfig.Builder();
-        config.setAddress(new InetSocketAddress(portNumber));
-        if (PSK_MODE) {
-            config.setPskStore(new StaticPskStore(PSK_IDENTITY, PSK_SECRET));
-        } else {
-            ConfigureDTLS.configureCredentials(config, ConfigureDTLS.SERVER_NAME, CERTIFICATE_MODE,context);
-        }
-        DTLSConnector connector = new DTLSConnector(config.build());
+        DtlsConnectorConfig.Builder dtlsConfig = new DtlsConnectorConfig.Builder();
+        dtlsConfig.setAddress(new InetSocketAddress(portNumber));
+        ConfigureDTLS.loadCredentials(dtlsConfig, SERVER_NAME);
+        DTLSConnector connector = new DTLSConnector(dtlsConfig.build());
         CoapEndpoint.CoapEndpointBuilder builder = new CoapEndpoint.CoapEndpointBuilder();
         builder.setConnector(connector);
         server.addEndpoint(builder.build());
         server.start();
-
-        // add special interceptor for message traces
-        for (Endpoint ep : server.getEndpoints()) {
-            ep.addInterceptor(new MessageTracer());
-        }
     }
 
     public void sendRequest(TPDU payload) {
@@ -146,14 +121,9 @@ public class TransportDTLSCoapBinding implements ASEService {
         CoapEndpoint.CoapEndpointBuilder endpointBuilder = new CoapEndpoint.CoapEndpointBuilder();
         DtlsConnectorConfig.Builder dtlsBuilder = new DtlsConnectorConfig.Builder();
         dtlsBuilder.setClientOnly();
-        if (PSK_MODE) {
-            dtlsBuilder.setPskStore(new StaticPskStore(PSK_IDENTITY, PSK_SECRET));
-        } else {
-            ConfigureDTLS.configureCredentials(dtlsBuilder, ConfigureDTLS.CLIENT_NAME, CERTIFICATE_MODE,context);
-        }
+        ConfigureDTLS.loadCredentials(dtlsBuilder, CLIENT_NAME);
         DTLSConnector dtlsConnector = new DTLSConnector(dtlsBuilder.build());
         endpointBuilder.setConnector(dtlsConnector);
         client.setEndpoint(endpointBuilder.build());
     }
-
 }

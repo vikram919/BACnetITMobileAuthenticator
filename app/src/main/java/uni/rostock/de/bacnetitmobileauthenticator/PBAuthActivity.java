@@ -98,7 +98,7 @@ public class PBAuthActivity extends AppCompatActivity {
         });
 
         // configure transport binding to coap dtls
-        bindingConfiguration = new TransportDTLSCoapBinding(getApplicationContext());
+        bindingConfiguration = new TransportDTLSCoapBinding();
         bindingConfiguration.createSecureCoapClient();
         bindingConfiguration.createSecureCoapServer(DTLS_SOCKET);
         bindingConfiguration.init();
@@ -224,6 +224,13 @@ public class PBAuthActivity extends AppCompatActivity {
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+
+        super.onDestroy();
+        bindingConfiguration.destroyCoapServer();
     }
 
 }
