@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">BACnetITMobileAuthenticator</string>
+    <string name="app_name">Authenticator</string>
+    <string name="add_device">ADD DEVICE</string>
+    <string name="welcome">Welcome to BACnet/IT Mobile Authenticator</string>
 </resources>
