@@ -42,8 +42,6 @@ import ch.fhnw.bacnetit.samplesandtests.api.encoding.type.primitive.UnsignedInte
 import ch.fhnw.bacnetit.samplesandtests.api.encoding.util.ByteQueue;
 import ch.fhnw.bacnetit.samplesandtests.api.service.confirmed.AddListElementRequest;
 import ch.fhnw.bacnetit.samplesandtests.api.service.confirmed.WritePropertyRequest;
-import uni.rostock.de.bacnet.it.coap.messageType.ConfirmAddDeviceRequest;
-import uni.rostock.de.bacnet.it.coap.messageType.OOBProtocol;
 import uni.rostock.de.bacnet.it.coap.transportbinding.TransportDTLSCoapBinding;
 
 public class BACnetIntentService extends IntentService {
@@ -130,10 +128,10 @@ public class BACnetIntentService extends IntentService {
                     // FIXME: dirtyhack, get propertyvalue using wrightproperty
                     ByteQueue queue = new ByteQueue(t_unitDataIndication.getData().getBody());
                     byte[] msg = queue.peek(15, queue.size() - 21);
-                    if (msg[0] == OOBProtocol.CONFIRM_ADD_DEVICE_REQUEST.getValue()) {
-                        Log.d(TAG, "Confrim add device request received from BDS");
-                        ConfirmAddDeviceRequest confirmAddDeviceRequest = new ConfirmAddDeviceRequest(msg);
-                    }
+//                    if (msg[0] == OOBProtocol.CONFIRM_ADD_DEVICE_REQUEST) {
+//                        Log.d(TAG, "Confrim add device request received from BDS");
+//                        ConfirmAddDeviceRequest confirmAddDeviceRequest = new ConfirmAddDeviceRequest(msg);
+//                    }
                 }
             }
 
@@ -218,6 +216,9 @@ public class BACnetIntentService extends IntentService {
         }
     }
 
+    /*
+     * builds a WritePropertyRequest including the byte array as OctetString.
+     */
     public void sendWriteProprtyRequest(byte[] message) {
         try {
 
