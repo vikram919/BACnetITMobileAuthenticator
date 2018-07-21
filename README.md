@@ -1,8 +1,16 @@
+-  * [Table of contents](#table-of-contents)
+-  * [BACnetITMobileAuthenticator](#BACnetITMobileAuthenticator)
+-    * [Introduction](#Introduction)
+-    * [Out-Of-Band Channel](#Out-Of-Band Channel)
+-    * [Delivering password in bits to BDS server](#Delivering password in bits to BDS server)
+-    * [Mutual Authentication](#Mutual Authentication)
+
 ## BACnetITMobileAuthenticator
 
+### Introduction
 <p>A simple mobile authenticator to make authenticating resource constrained devices easier in an Building Automation Network simply BACnet. This apps implements a simple out-of-band (OOB) authentication between resource cosntrained device and Bacnet/IT Directory Server (BDS) using omnipresent mobile phones.</p>
 
-### Out-Of-Band information exchange between mobile camera and device LED:
+### Out-Of-Band Channel
 The camera captures LED blinks and convert it to bits.
 
 <p> Here is the main screen of the app: </p>
@@ -15,13 +23,13 @@ The mobile phone captures the OOB password in bits from the LED blink controlled
 <p> Camera screen that captures bits from LED blinks: </p>
 <img src="cameraScreen.jpg" alt="App Screen" width="250" height="400"></img>
 
-Place the camera very close to the device <=5cm, this is alos a security advanatage from evasdropping.
+Place the camera very close to the device <=5cm, this is also a security advanatage from evasdropping.
 
-### Delivering password in bits to BDS server:
+### Delivering password in bits to BDS server
 The captured OOB password is now delivered from mobile to the server in AddDeviceRequest message, provided the server address hard coded. The mobile phone authenticates itself through CoAP-DTLS in certificate mode, This uses the demo certificates provided by [californium](https://github.com/eclipse/californium) CoAP library.
 Once the device blink password is delivered to sever, server will acknowledge the mobile with a BACnet SimpleACK message for the AddDeviceRequest, user will press button on the device indicating the device to perform the elliptical curve diffie hellmann key exchange where device and sever exchange their public keys.
 
-### Mutual Authentication:
+### Mutual Authentication
 The password excanged OOB can be used for Integrity protection as well as means of authentication.
 A mac key is derived from the OOB password bits and salt provided in the key exchange message by the device.
 The OOB password life is limited to 360 seconds, and the authentication should occur within this time period.
