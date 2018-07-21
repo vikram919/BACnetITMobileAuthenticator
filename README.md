@@ -1,10 +1,3 @@
--  * [Table of contents](#table-of-contents)
--  * [BACnetITMobileAuthenticator](#BACnetITMobileAuthenticator)
--    * [Introduction](#Introduction)
--    * [Out-Of-Band Channel](#Out-Of-Band Channel)
--    * [Delivering password in bits to BDS server](#Delivering password in bits to BDS server)
--    * [Mutual Authentication](#Mutual Authentication)
-
 ## BACnetITMobileAuthenticator
 
 ### Introduction
@@ -34,3 +27,9 @@ The password excanged OOB can be used for Integrity protection as well as means 
 A mac key is derived from the OOB password bits and salt provided in the key exchange message by the device.
 The OOB password life is limited to 360 seconds, and the authentication should occur within this time period.
 The idea is to avoid PKI based certificates in resource cosntrained devices that are used in building networks.
+
+### License
+not yet decided mostly will be as Copyright 2018 University of Rostock, Institute of Applied Microelectronics and Computer Engineering.
+
+### Acknowledgements
+This work make use of code from Dr. Sebastian Unger (former Ph.D student at University of Rostock, Germany)
