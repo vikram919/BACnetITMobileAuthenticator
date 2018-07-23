@@ -129,8 +129,6 @@ public class CameraActivity extends AppCompatActivity {
         textureView = findViewById(R.id.textureView);
         textViewDisplayPin = findViewById(R.id.displayPinTextView);
         startBackgroundThread();
-        Intent intent = new Intent(getApplicationContext(), BACnetIntentService.class);
-        startService(intent);
         bitStreamDetector = new BitStreamDetector(getApplicationContext());
         bitStreamDetector.setBitStreamDetectorKeyReadCallback(bitStreamDetectorKeyReadCallback);
 
