@@ -23,10 +23,11 @@
 
         <service
             android:name=".BACnetIntentService"
-            android:exported="false" />
+            android:enabled="true"
+            android:exported="true" />
 
         <activity android:name=".StatusActivity" />
-        <activity android:name=".CameraActivity"></activity>
+        <activity android:name=".CameraActivity" />
     </application>
 
 </manifest>

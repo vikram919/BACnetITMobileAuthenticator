@@ -35,6 +35,7 @@ import java.util.Arrays;
 public class CameraActivity extends AppCompatActivity {
 
     private static final int REQUEST_CAMERA_PERMISSION_RESOLVED = 0;
+    private static final String TAG = "CameraActivity";
 
     private static SparseIntArray ORIENTATIONS = new SparseIntArray();
     private String mCameraId;
@@ -264,18 +265,18 @@ public class CameraActivity extends AppCompatActivity {
                 ByteBuffer bb = image.getPlanes()[0].getBuffer();
                 byte[] bytes = new byte[bb.capacity()];
                 bb.get(bytes);
-                long luminosity = 0;
+                long totalLuminosity = 0;
                 long c = 0;
                 for (int row = (mPreviewHeight*1)/3; row < (mPreviewHeight*2)/3; row++) {
                     for (int col = (mPreviewWidth*1)/3; col < (mPreviewWidth *2)/3; col++) {
                         int v = (int) bytes[row * mPreviewWidth + col];
-                        luminosity += v;
+                        totalLuminosity += v<0? 256+v : v;
                         c++;
                     }
                 }
-                short relativeLuminosity = (short) (luminosity / c);
-                Log.d("AuthenticatorActivity", "luminosity Value: " + relativeLuminosity);
-                bitStreamDetector.onLuminosityMeasured(relativeLuminosity);
+                short averageLuminosity = (short) (totalLuminosity / c);
+                Log.d(TAG, "luminosity Value: " + averageLuminosity);
+                bitStreamDetector.onLuminosityMeasured(averageLuminosity);
                 image.close();
             }
         }
@@ -302,13 +303,11 @@ public class CameraActivity extends AppCompatActivity {
     BitStreamDetectorKeyReadCallback bitStreamDetectorKeyReadCallback = new BitStreamDetectorKeyReadCallback() {
         @Override
         public void onKeyRead(String key) {
-            Log.d("MobileAuthenticator", "key value reached");
+            Log.d(TAG, "key value reached");
             closeCamera();
-            Intent messageIntent = new Intent(ADD_DEVICE_REQUEST_SIGNAL);
-            messageIntent.putExtra(ADD_DEVICE_REQUEST_SIGNAL_PAYLOAD, key);
-            sendBroadcastMessage(messageIntent);
-            Intent statusActivity = new Intent(getApplicationContext(), StatusActivity.class);
-            startActivity(statusActivity);
+            stopBackgroundThread();
+            Log.d(TAG, "sending ADD_DEVICE_REQUEST_SIGNAL");
+            sendMessage(key);
         }
 
         @Override
@@ -327,21 +326,12 @@ public class CameraActivity extends AppCompatActivity {
         }
     };
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            /*
-            Listens for error messages if BACnetService fails,
-            starts status intent early inform user about the error.
-            */
-            if (intent.hasExtra(BACnetIntentService.SERVICE_ERROR_PAYLOAD)) {
-                //TODO: should start intent before receiving confirmation from Server
-            }
-        }
-    };
-
-    private void sendBroadcastMessage(Intent messageIntent) {
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
-        localBroadcastManager.sendBroadcast(messageIntent);
+    private void sendMessage(String key) {
+        Intent messageIntent = new Intent(ADD_DEVICE_REQUEST_SIGNAL);
+        messageIntent.putExtra(ADD_DEVICE_REQUEST_SIGNAL_PAYLOAD, key);
+        Log.d(TAG, "ADD_DEVICE_REQUEST_SIGNAL with payload is sent to BACnetIntentService");
+        LocalBroadcastManager.getInstance(this).sendBroadcast(messageIntent);
+        Intent statusActivity = new Intent(getApplicationContext(), StatusActivity.class);
+        startActivity(statusActivity);
     }
 }

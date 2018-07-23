@@ -1,10 +1,15 @@
 package uni.rostock.de.bacnetitmobileauthenticator;
 
 import android.app.IntentService;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import org.eclipse.californium.core.coap.CoAP;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +32,8 @@ import ch.fhnw.bacnetit.samplesandtests.api.encoding.asdu.SimpleACK;
 import ch.fhnw.bacnetit.samplesandtests.api.encoding.util.ByteQueue;
 import ch.fhnw.bacnetit.samplesandtests.api.service.confirmed.WritePropertyRequest;
 import uni.rostock.de.bacnet.it.coap.oobAuth.ApplicationMessages;
+import uni.rostock.de.bacnet.it.coap.oobAuth.OobProtocol;
+import uni.rostock.de.bacnet.it.coap.oobAuth.OobStatus;
 import uni.rostock.de.bacnet.it.coap.transportbinding.TransportDTLSCoapBinding;
 
 public class BACnetIntentService extends IntentService {
@@ -47,6 +54,9 @@ public class BACnetIntentService extends IntentService {
     protected static final String SERVICE_AUTH_SUCCESS_PAYLOAD = "serviceAuthSuccessPayload";
     protected static final String SERVICE_AUTH_FAILURE = "serviceAuthError";
     protected static final String SERVICE_AUTH_FAILURE_PAYLOAD = "serviceAuthErrorPayload";
+    protected static final String ADD_DEVICE_REQUEST_STATUS = "addDeviceRequestAckStatus";
+    protected static final String ADD_DEVICE_REQUEST_ACK_ACTION = "addDeviceRequestAckAction";
+    protected static final String ADD_DEVICE_REQUEST_CONFIRM_ACTION = "addDeviceRequestConfirmAction";
     private ApplicationMessages applicationMessages;
 
     public BACnetIntentService() {
@@ -57,20 +67,8 @@ public class BACnetIntentService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        try {
-
-            final DiscoveryConfig ds = new DiscoveryConfig("DNSSD", "1.1.1.1", "itb.bacnet.ch.",
-                    "bds._sub._bacnet._udp.", "authen._sub._bacnet._udp.", "authenservice._sub._bacnet._udp.", false);
-
-            DirectoryService.init();
-            DirectoryService.getInstance().setDNSBinding(new DNSSD(ds));
-            start();
-            new SendAddDeviceRequest().execute("");
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, new IntentFilter(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL));
     }
-
 
     public void start() {
 
@@ -95,9 +93,9 @@ public class BACnetIntentService extends IntentService {
 
         // configure transport binding to coap dtls
         bindingConfiguration = new TransportDTLSCoapBinding();
-        bindingConfiguration.setCertificateMode();
+        bindingConfiguration.setAllModes();
         bindingConfiguration.createSecureCoapClient();
-        bindingConfiguration.createSecureCoapServer(DTLS_SOCKET);
+        bindingConfiguration.createSecureCoapServer(CoAP.DEFAULT_COAP_SECURE_PORT);
         bindingConfiguration.init();
         channelConfiguration.setASEService((ASEService) bindingConfiguration);
         channelConfiguration.registerChannelListener(new ChannelListener(new BACnetEID(MOBILE_ID)) {
@@ -110,13 +108,20 @@ public class BACnetIntentService extends IntentService {
                     // FIXME: dirtyhack, get propertyvalue using wrightproperty
                     ByteQueue queue = new ByteQueue(t_unitDataIndication.getData().getBody());
                     byte[] msg = queue.peek(15, queue.size() - 21);
-//                    if (msg[0] == OOBProtocol.CONFIRM_ADD_DEVICE_REQUEST) {
-//                        Log.d(TAG, "Confrim add device request received from BDS");
-//                        ConfirmAddDeviceRequest confirmAddDeviceRequest = new ConfirmAddDeviceRequest(msg);
-//                    }
+                    if(msg[0] >> 5 == OobProtocol.OOB_STATUS){
+                        OobStatus oobStatus = new OobStatus(msg);
+                        boolean status = oobStatus.getOobStatus();
+                        Intent messageIntent = new Intent(ADD_DEVICE_REQUEST_STATUS);
+                        messageIntent.setAction(ADD_DEVICE_REQUEST_CONFIRM_ACTION);
+                        messageIntent.putExtra("status", status);
+                        broadcastMessageToUI(messageIntent);
+                    }
                 }
                 if (incoming instanceof SimpleACK) {
                     Log.d(TAG, "mobile received ack for AddDeviceRequest");
+                    Intent messageIntent = new Intent(ADD_DEVICE_REQUEST_STATUS);
+                    messageIntent.setAction(ADD_DEVICE_REQUEST_ACK_ACTION);
+                    broadcastMessageToUI(messageIntent);
                 }
             }
 
@@ -126,9 +131,63 @@ public class BACnetIntentService extends IntentService {
             }
         });
         Log.d(TAG, "Device started.....!");
+
     }
 
-    public class SendAddDeviceRequest extends AsyncTask <String, Integer, String> {
+    @Override
+    public void onDestroy() {
+
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        Log.d(TAG, "service started");
+        try {
+
+            final DiscoveryConfig ds = new DiscoveryConfig("DNSSD", "1.1.1.1", "itb.bacnet.ch.",
+                    "bds._sub._bacnet._udp.", "authen._sub._bacnet._udp.", "authenservice._sub._bacnet._udp.", false);
+
+            DirectoryService.init();
+            DirectoryService.getInstance().setDNSBinding(new DNSSD(ds));
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        start();
+    }
+
+    public void broadcastMessageToUI(Intent messageIntent) {
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.sendBroadcast(messageIntent);
+    }
+
+    private void setOobPswdString(String value) {
+        this.oobPswdString = value;
+    }
+
+    private String getOobPswdString() {
+        return oobPswdString;
+    }
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "broadcastReceiver received some signal");
+            /*
+            Listens for error messages if BACnetService fails,
+            starts status intent early inform user about the error.
+            */
+            if (intent.getAction().contentEquals(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL)) {
+                Log.d(TAG, "received AddDeviceRequest action signal");
+                setOobPswdString(intent.getStringExtra(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL_PAYLOAD));
+                Log.d(TAG, "mobile sending AddDeviceRequest message to BDS");
+                LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(this);
+                new SendAddDeviceRequest().execute("");
+            }
+        }
+    };
+
+    public class SendAddDeviceRequest extends AsyncTask<String, Integer, String> {
 
         @Override
         protected String doInBackground(String... strings) {
@@ -142,32 +201,5 @@ public class BACnetIntentService extends IntentService {
         protected void onPostExecute(String result) {
             Log.d(TAG, "Sent Add device request to BDS");
         }
-    }
-
-    @Override
-    public void onDestroy() {
-
-        super.onDestroy();
-        bindingConfiguration.destroyCoapServer();
-    }
-
-
-    @Override
-    protected void onHandleIntent(Intent intent) {
-        Log.d(TAG, "service started");
-        setOobPswdString(intent.getStringExtra(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL_PAYLOAD));
-    }
-
-    public void broadcastMessageToUI(Intent messageIntent) {
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
-        localBroadcastManager.sendBroadcast(messageIntent);
-    }
-
-    private void setOobPswdString(String value) {
-        this.oobPswdString = value;
-    }
-
-    private String getOobPswdString() {
-        return oobPswdString;
     }
 }
