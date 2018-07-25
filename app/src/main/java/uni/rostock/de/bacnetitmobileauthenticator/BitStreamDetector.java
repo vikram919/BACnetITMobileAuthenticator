@@ -13,7 +13,7 @@ public class BitStreamDetector implements BitStreamDetectorCallback {
     private int mCurrentState;
 
     public static final int THRESHOLD = 240;
-    public static final int KEY_LENGTH = 20; /* Number of symbols */
+    private static final int KEY_LENGTH = 21; /* Number of symbols */
     public static final int TIMEOUT = 2000; /* in ms - maximum symbol width */
     public static final int LEARN_LENGTH = 6;
 
@@ -106,9 +106,9 @@ public class BitStreamDetector implements BitStreamDetectorCallback {
                     boolean fixedWidth = PreferenceManager.getDefaultSharedPreferences(ctx).getBoolean("settings_flicker_fixed_symbols", true);
                     if (fixedWidth) {
                         try {
-                            mLearnedSymbolWidth[0] = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(ctx).getString("settings_flicker_fixed_symbol_width", "200"));
-                        } catch (NumberFormatException e) {
                             mLearnedSymbolWidth[0] = 200;
+                        } catch (NumberFormatException e) {
+                            Log.d("BSD", "error while alloting fixed length");
                         }
                     } else {
                         mLearnedSymbolWidth[0] = mLearnedSymbolWidth[LEARN_LENGTH] / (LEARN_LENGTH - 1);
@@ -172,6 +172,4 @@ public class BitStreamDetector implements BitStreamDetectorCallback {
             }
         }
     };
-
-
 }

@@ -22,7 +22,7 @@
         </activity>
 
         <service
-            android:name=".BACnetIntentService"
+            android:name="uni.rostock.de.bacnetitmobileauthenticator.BACnetIntentService"
             android:enabled="true"
             android:exported="true" />
 

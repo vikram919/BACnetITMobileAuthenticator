@@ -31,6 +31,7 @@ import ch.fhnw.bacnetit.samplesandtests.api.encoding.asdu.ConfirmedRequest;
 import ch.fhnw.bacnetit.samplesandtests.api.encoding.asdu.SimpleACK;
 import ch.fhnw.bacnetit.samplesandtests.api.encoding.util.ByteQueue;
 import ch.fhnw.bacnetit.samplesandtests.api.service.confirmed.WritePropertyRequest;
+import uni.rostock.de.bacnet.it.coap.oobAuth.AddDeviceRequest;
 import uni.rostock.de.bacnet.it.coap.oobAuth.ApplicationMessages;
 import uni.rostock.de.bacnet.it.coap.oobAuth.OobProtocol;
 import uni.rostock.de.bacnet.it.coap.oobAuth.OobStatus;
@@ -46,18 +47,10 @@ public class BACnetIntentService extends IntentService {
     private static final String AUTH_IP = "139.30.202.56:";
     private static final String SECURE_SCHEME = "coaps://";
     TransportDTLSCoapBinding bindingConfiguration;
-    private boolean signal = false;
     private String oobPswdString;
-    protected static final String SERVICE_ERROR_MESSAGE = "serviceErrorMessage";
-    protected static final String SERVICE_ERROR_PAYLOAD = "serviceErrorPayload";
-    protected static final String SERVICE_AUTH_SUCCESS = "serviceAuthSuccess";
-    protected static final String SERVICE_AUTH_SUCCESS_PAYLOAD = "serviceAuthSuccessPayload";
-    protected static final String SERVICE_AUTH_FAILURE = "serviceAuthError";
-    protected static final String SERVICE_AUTH_FAILURE_PAYLOAD = "serviceAuthErrorPayload";
     protected static final String ADD_DEVICE_REQUEST_STATUS = "addDeviceRequestAckStatus";
     protected static final String ADD_DEVICE_REQUEST_ACK_ACTION = "addDeviceRequestAckAction";
     protected static final String ADD_DEVICE_REQUEST_CONFIRM_ACTION = "addDeviceRequestConfirmAction";
-    private ApplicationMessages applicationMessages;
 
     public BACnetIntentService() {
         super(TAG);
@@ -102,13 +95,14 @@ public class BACnetIntentService extends IntentService {
             @Override
             public void onIndication(T_UnitDataIndication t_unitDataIndication, Object object) {
                 // Parse the incoming message
-                ASDU incoming = applicationMessages.getServiceFromBody(t_unitDataIndication.getData().getBody());
+                ASDU incoming = ApplicationMessages.getServiceFromBody(t_unitDataIndication.getData().getBody());
                 if (incoming instanceof ConfirmedRequest
                         && ((ConfirmedRequest) incoming).getServiceRequest() instanceof WritePropertyRequest) {
                     // FIXME: dirtyhack, get propertyvalue using wrightproperty
                     ByteQueue queue = new ByteQueue(t_unitDataIndication.getData().getBody());
                     byte[] msg = queue.peek(15, queue.size() - 21);
                     if(msg[0] >> 5 == OobProtocol.OOB_STATUS){
+                        Log.d(TAG, "mobile received OobStatus message");
                         OobStatus oobStatus = new OobStatus(msg);
                         boolean status = oobStatus.getOobStatus();
                         Intent messageIntent = new Intent(ADD_DEVICE_REQUEST_STATUS);
@@ -144,7 +138,6 @@ public class BACnetIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         Log.d(TAG, "service started");
         try {
-
             final DiscoveryConfig ds = new DiscoveryConfig("DNSSD", "1.1.1.1", "itb.bacnet.ch.",
                     "bds._sub._bacnet._udp.", "authen._sub._bacnet._udp.", "authenservice._sub._bacnet._udp.", false);
 
@@ -162,6 +155,7 @@ public class BACnetIntentService extends IntentService {
     }
 
     private void setOobPswdString(String value) {
+        Log.d(TAG, "received oob password string: "+value);
         this.oobPswdString = value;
     }
 
@@ -179,20 +173,21 @@ public class BACnetIntentService extends IntentService {
             */
             if (intent.getAction().contentEquals(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL)) {
                 Log.d(TAG, "received AddDeviceRequest action signal");
-                setOobPswdString(intent.getStringExtra(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL_PAYLOAD));
-                Log.d(TAG, "mobile sending AddDeviceRequest message to BDS");
+                String key = intent.getStringExtra(CameraActivity.ADD_DEVICE_REQUEST_SIGNAL_PAYLOAD).substring(1);
+                setOobPswdString(key);
+                Log.d(TAG, "mobile sending AddDeviceRequest message to BDS with key: "+key);
                 LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(this);
                 new SendAddDeviceRequest().execute("");
             }
         }
     };
 
-    public class SendAddDeviceRequest extends AsyncTask<String, Integer, String> {
+    private class SendAddDeviceRequest extends AsyncTask<String, Integer, String> {
 
         @Override
         protected String doInBackground(String... strings) {
-            byte[] message = getOobPswdString().getBytes(StandardCharsets.UTF_8);
-            applicationMessages.sendWritePropertyRequest(aseServiceChannel, message,
+            AddDeviceRequest addDeviceRequest = new AddDeviceRequest(getOobPswdString());
+            ApplicationMessages.sendWritePropertyRequest(aseServiceChannel, addDeviceRequest.getBA(),
                     new BACnetEID(MOBILE_ID), new BACnetEID(AUTH_ID), SECURE_SCHEME + AUTH_IP + DTLS_SOCKET);
             return "Sent Add device request to BDS";
         }

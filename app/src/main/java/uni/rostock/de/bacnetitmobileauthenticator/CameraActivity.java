@@ -268,7 +268,7 @@ public class CameraActivity extends AppCompatActivity {
                 for (int row = (mPreviewHeight*1)/3; row < (mPreviewHeight*2)/3; row++) {
                     for (int col = (mPreviewWidth*1)/3; col < (mPreviewWidth *2)/3; col++) {
                         int v = (int) bytes[row * mPreviewWidth + col];
-                        totalLuminosity += v<0? 256+v : v;
+                        totalLuminosity += (v < 0) ? 256 + v : v;
                         c++;
                     }
                 }
@@ -301,6 +301,7 @@ public class CameraActivity extends AppCompatActivity {
     BitStreamDetectorKeyReadCallback bitStreamDetectorKeyReadCallback = new BitStreamDetectorKeyReadCallback() {
         @Override
         public void onKeyRead(String key) {
+            Log.d(TAG, key);
             Log.d(TAG, "key value reached");
             closeCamera();
             stopBackgroundThread();
