@@ -12,7 +12,6 @@ import android.util.Log;
 import org.eclipse.californium.core.coap.CoAP;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 
 import ch.fhnw.bacnetit.ase.application.configuration.api.DiscoveryConfig;
 import ch.fhnw.bacnetit.ase.application.service.api.ASEServices;
@@ -42,11 +41,10 @@ public class BACnetIntentService extends IntentService {
     protected static final String TAG = BACnetIntentService.class.getName();
     private static final int AUTH_ID = 1;
     private static final int MOBILE_ID = 2;
-    private static final int DTLS_SOCKET = 5684;
+    private static final int DTLS_SOCKET = CoAP.DEFAULT_COAP_SECURE_PORT;
     private ASEServices aseServiceChannel;
     private static final String AUTH_IP = "139.30.202.56:";
     private static final String SECURE_SCHEME = "coaps://";
-    TransportDTLSCoapBinding bindingConfiguration;
     private String oobPswdString;
     protected static final String ADD_DEVICE_REQUEST_STATUS = "addDeviceRequestAckStatus";
     protected static final String ADD_DEVICE_REQUEST_ACK_ACTION = "addDeviceRequestAckAction";
@@ -85,8 +83,8 @@ public class BACnetIntentService extends IntentService {
         });
 
         // configure transport binding to coap dtls
-        bindingConfiguration = new TransportDTLSCoapBinding();
-        bindingConfiguration.setAllModes();
+        TransportDTLSCoapBinding bindingConfiguration = new TransportDTLSCoapBinding();
+        bindingConfiguration.setCertificateMode();
         bindingConfiguration.createSecureCoapClient();
         bindingConfiguration.createSecureCoapServer(CoAP.DEFAULT_COAP_SECURE_PORT);
         bindingConfiguration.init();

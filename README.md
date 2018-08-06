@@ -6,10 +6,13 @@
 ### Out-Of-Band Channel
 The camera captures LED blinks and convert it to bits.
 
+<p> The Flowchart of the mobile application </p>
+<img src="MobileAppFC.png" alt="App FlowChart" width="250" height="400"></img>
+
 <p> Here is the main screen of the app: </p>
 <img src="mainScreen.jpg" alt="App Screen" width="250" height="400"></img>
 
-By clicking the Button **ADD DEVICE**, turns the back camera to capture the bliking bits from the LED. 
+By clicking the Button **ADD DEVICE**, turns the back camera to capture the blinking bits from the LED.
 Before pressing **ADD DEVICE** button, user should press the push button on device so the device will start blinking LED.
 The mobile phone captures the OOB password in bits from the LED blink controlled by the device . The device is resource constrained, this can be a micro controller with tens of kilo bytes of storage and limited processing power.
 
