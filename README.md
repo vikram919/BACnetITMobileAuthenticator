@@ -6,8 +6,8 @@
 ### Out-Of-Band Channel
 The camera captures LED blinks and convert it to bits.
 
-<p> The Flowchart of the mobile application </p>
-<img src="MobileAppFC.png" alt="App FlowChart" width="250" height="400"></img>
+### The Flowchart of the mobile application
+<img src="MobileAppFC.png" alt="App FlowChart" width="500" height="400"></img>
 
 <p> Here is the main screen of the app: </p>
 <img src="mainScreen.jpg" alt="App Screen" width="250" height="400"></img>
